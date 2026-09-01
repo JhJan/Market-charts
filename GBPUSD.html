@@ -20,7 +20,6 @@
   </style>
 </head>
 <body>
-  <!-- TradingView Widget BEGIN -->
   <div class="tradingview-widget-container" style="height:100%;width:100%">
     <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
     <div class="tradingview-widget-copyright"><a href="https://es.tradingview.com/symbols/GBPUSD/?exchange=VANTAGE" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
@@ -29,7 +28,7 @@
       "allow_symbol_change": true,
       "calendar": false,
       "details": false,
-      "hide_side_toolbar": true,
+      "hide_side_toolbar": false,
       "hide_top_toolbar": false,
       "hide_legend": false,
       "hide_volume": false,
@@ -44,7 +43,7 @@
       "backgroundColor": "rgba(11, 15, 25, 1)",
       "gridColor": "rgba(30, 41, 59, 0.3)",
       "watchlist": [],
-      "withdateranges": false,
+      "withdateranges": true,
       "compareSymbols": [],
       "support_host": "https://www.tradingview.com",
       "studies": [
@@ -57,14 +56,13 @@
         "moving average exponential.length": 50,
         "moving average exponential.plot.color": "#00BFFF",
         "moving average exponential.plot.linewidth": 1,
-        "moving average exponential:1.length": 200,
-        "moving average exponential:1.plot.color": "#FFFFFF",
-        "moving average exponential:1.plot.linewidth": 2
+        "moving average exponential$1.length": 200,
+        "moving average exponential$1.plot.color": "#FFFFFF",
+        "moving average exponential$1.plot.linewidth": 2
       },
       "autosize": true
     }
     </script>
   </div>
-  <!-- TradingView Widget END -->
-</body>
+  </body>
 </html>
