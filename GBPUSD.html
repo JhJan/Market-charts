@@ -1,272 +1,50 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TradingView - GBPUSD con EMAs ajustables</title>
-  <style>
-    /* Reset y fullscreen */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background-color: #0b0f19;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    #app {
-      width: 100vw;
-      height: 100vh;
-      position: relative;
-    }
-
-    /* Panel de control flotante */
-    .control-panel {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: rgba(11, 15, 25, 0.85);
-      backdrop-filter: blur(6px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 12px;
-      padding: 16px 20px;
-      color: #e0e7ef;
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      min-width: 200px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-      user-select: none;
-    }
-    .control-panel .title {
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      color: #94a3b8;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding-bottom: 8px;
-      margin-bottom: 4px;
-    }
-    .control-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .control-row label {
-      font-size: 13px;
-      color: #cbd5e1;
-    }
-    .control-row input {
-      width: 64px;
-      padding: 4px 6px;
-      background: rgba(30, 41, 59, 0.6);
-      border: 1px solid #334155;
-      border-radius: 6px;
-      color: #f1f5f9;
-      font-size: 13px;
-      text-align: center;
-      transition: border-color 0.2s;
-    }
-    .control-row input:focus {
-      outline: none;
-      border-color: #3b82f6;
-    }
-    .btn-update {
-      background: #2563eb;
-      border: none;
-      border-radius: 8px;
-      color: white;
-      font-weight: 600;
-      font-size: 14px;
-      padding: 8px 0;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-      margin-top: 4px;
-    }
-    .btn-update:hover {
-      background: #1d4ed8;
-    }
-    .btn-update:active {
-      transform: scale(0.97);
-    }
-    /* Responsive para móviles */
-    @media (max-width: 600px) {
-      .control-panel {
-        top: 12px;
-        right: 12px;
-        padding: 12px 14px;
-        min-width: 160px;
-      }
-      .control-row input {
-        width: 50px;
-      }
-    }
-
-    /* Contenedor del widget */
-    .tradingview-widget-container {
-      width: 100%;
-      height: 100%;
-    }
-    .tradingview-widget-container__widget {
-      width: 100%;
-      height: calc(100% - 32px);
-    }
-    .tradingview-widget-copyright {
-      text-align: center;
-      padding: 4px 0;
-    }
-    .tradingview-widget-copyright a {
-      color: #94a3b8;
-      font-size: 12px;
-      text-decoration: none;
-    }
-    .tradingview-widget-copyright a:hover {
-      color: #cbd5e1;
-    }
-  </style>
-</head>
-<body>
-  <div id="app">
-    <!-- Panel de control -->
-    <div class="control-panel">
-      <div class="title">⚙️ EMAs</div>
-      <div class="control-row">
-        <label>EMA 1</label>
-        <input type="number" id="ema1-input" min="1" max="500" step="1" />
-      </div>
-      <div class="control-row">
-        <label>EMA 2</label>
-        <input type="number" id="ema2-input" min="1" max="500" step="1" />
-      </div>
-      <button class="btn-update" id="update-btn">Actualizar gráfico</button>
-    </div>
-
-    <!-- Widget de TradingView -->
-    <div class="tradingview-widget-container">
-      <div class="tradingview-widget-container__widget"></div>
-      <div class="tradingview-widget-copyright">
-        <a href="https://es.tradingview.com/symbols/GBPUSD/?exchange=VANTAGE" target="_blank" rel="noopener">
-          Track all markets on TradingView
-        </a>
-      </div>
-    </div>
+<!-- TradingView Widget BEGIN -->
+<div class="tradingview-widget-container" style="height:100%;width:100%">
+  <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
+  <div class="tradingview-widget-copyright">
+    <a href="https://es.tradingview.com/symbols/EURUSD/?exchange=VANTAGE" rel="noopener nofollow" target="_blank">
+      <span class="blue-text">Track all markets on TradingView</span>
+    </a>
   </div>
-
-  <script>
-    (function() {
-      // ---------- Leer parámetros de la URL ----------
-      function getParam(name, def) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const val = urlParams.get(name);
-        if (val === null) return def;
-        const num = parseInt(val, 10);
-        return (isNaN(num) || num < 1) ? def : num;
-      }
-
-      let ema1 = getParam('ema1', 50);
-      let ema2 = getParam('ema2', 200);
-
-      // ---------- Rellenar los inputs con los valores actuales ----------
-      const ema1Input = document.getElementById('ema1-input');
-      const ema2Input = document.getElementById('ema2-input');
-      ema1Input.value = ema1;
-      ema2Input.value = ema2;
-
-      // ---------- Configuración del widget ----------
-      function getWidgetConfig(ema1Length, ema2Length) {
-        return {
-          "allow_symbol_change": true,
-          "calendar": false,
-          "details": false,
-          "hide_side_toolbar": true,
-          "hide_top_toolbar": false,
-          "hide_legend": false,
-          "hide_volume": false,
-          "hotlist": false,
-          "interval": "W",
-          "locale": "es",
-          "save_image": true,
-          "style": "1",
-          "symbol": "VANTAGE:GBPUSD",
-          "theme": "dark",
-          "timezone": "America/New_York",
-          "backgroundColor": "rgba(11, 15, 25, 1)",
-          "gridColor": "rgba(30, 41, 59, 0.3)",
-          "watchlist": [],
-          "withdateranges": false,
-          "compareSymbols": [],
-          "support_host": "https://www.tradingview.com",
-          "studies": [
-            "STD;EMA",
-            "STD;EMA",
-            "STD;Momentum",
-            "STD;RSI"
-          ],
-          "studies_overrides": {
-            "moving average exponential.length": ema1Length,
-            "moving average exponential.plot.color": "#00BFFF",
-            "moving average exponential.plot.linewidth": 1,
-            "moving average exponential:1.length": ema2Length,
-            "moving average exponential:1.plot.color": "#FFFFFF",
-            "moving average exponential:1.plot.linewidth": 2
-          },
-          "autosize": true
-        };
-      }
-
-      // ---------- Cargar el widget ----------
-      function loadWidget(ema1Val, ema2Val) {
-        const container = document.querySelector('.tradingview-widget-container');
-        // Eliminar script anterior si existe (por si se recarga sin recargar la página)
-        const oldScript = container.querySelector('script[src*="embed-widget-advanced-chart.js"]');
-        if (oldScript) {
-          oldScript.remove();
-        }
-
-        const script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
-        script.async = true;
-        script.textContent = JSON.stringify(getWidgetConfig(ema1Val, ema2Val));
-        container.appendChild(script);
-      }
-
-      // Carga inicial
-      loadWidget(ema1, ema2);
-
-      // ---------- Manejar la actualización (recarga la página con nuevos parámetros) ----------
-      document.getElementById('update-btn').addEventListener('click', function() {
-        let newEma1 = parseInt(ema1Input.value, 10);
-        let newEma2 = parseInt(ema2Input.value, 10);
-        if (isNaN(newEma1) || newEma1 < 1) newEma1 = 50;
-        if (isNaN(newEma2) || newEma2 < 1) newEma2 = 200;
-        // Actualizar los inputs con valores validados
-        ema1Input.value = newEma1;
-        ema2Input.value = newEma2;
-
-        // Construir nueva URL con los parámetros
-        const url = new URL(window.location.href);
-        url.searchParams.set('ema1', newEma1);
-        url.searchParams.set('ema2', newEma2);
-        window.location.href = url.href;  // Recarga la página
-      });
-
-      // Permitir actualizar con Enter en los inputs
-      [ema1Input, ema2Input].forEach(input => {
-        input.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter') {
-            document.getElementById('update-btn').click();
-          }
-        });
-      });
-    })();
+  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+  {
+    "allow_symbol_change": true,
+    "calendar": false,
+    "details": false,
+    "hide_side_toolbar": true,
+    "hide_top_toolbar": false,
+    "hide_legend": false,
+    "hide_volume": false,
+    "hotlist": false,
+    "interval": "W",
+    "locale": "es",
+    "save_image": true,
+    "style": "1",
+    "symbol": "VANTAGE:EURUSD",
+    "theme": "dark",
+    "timezone": "America/New_York",
+    "backgroundColor": "rgba(11, 15, 25, 1)",
+    "gridColor": "rgba(30, 41, 59, 0.3)",
+    "watchlist": [],
+    "withdateranges": false,
+    "compareSymbols": [],
+    "support_host": "https://www.tradingview.com",
+    "studies": [
+      "STD;EMA",
+      "STD;EMA",
+      "STD;Momentum",
+      "STD;RSI"
+    ],
+    "studies_overrides": {
+      "moving average exponential.length": 50,
+      "moving average exponential.plot.color": "#00BFFF",
+      "moving average exponential.plot.linewidth": 1,
+      "moving average exponential:1.length": 200,
+      "moving average exponential:1.plot.color": "#FFFFFF",
+      "moving average exponential:1.plot.linewidth": 2
+    },
+    "autosize": true
+  }
   </script>
-</body>
-</html>
+</div>
+<!-- TradingView Widget END -->
