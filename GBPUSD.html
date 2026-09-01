@@ -1,25 +1,29 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TradingView - GBPUSD</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TradingView - GBPUSD con EMAs ajustables</title>
   <style>
-    /* Reset y contenedor principal */
-    html, body {
+    /* Reset y fullscreen */
+    * {
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
       width: 100%;
       height: 100%;
       overflow: hidden;
       background-color: #0b0f19;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-    #widget-container {
-      height: 100vh;
+    #app {
       width: 100vw;
+      height: 100vh;
       position: relative;
     }
+
     /* Panel de control flotante */
     .control-panel {
       position: absolute;
@@ -36,7 +40,7 @@
       flex-direction: column;
       gap: 12px;
       min-width: 200px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
       user-select: none;
     }
     .control-panel .title {
@@ -45,7 +49,7 @@
       letter-spacing: 0.5px;
       text-transform: uppercase;
       color: #94a3b8;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       padding-bottom: 8px;
       margin-bottom: 4px;
     }
@@ -58,7 +62,6 @@
     .control-row label {
       font-size: 13px;
       color: #cbd5e1;
-      white-space: nowrap;
     }
     .control-row input {
       width: 64px;
@@ -75,14 +78,6 @@
       outline: none;
       border-color: #3b82f6;
     }
-    .control-row input[type="color"] {
-      width: 32px;
-      height: 32px;
-      padding: 0;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-    }
     .btn-update {
       background: #2563eb;
       border: none;
@@ -94,7 +89,6 @@
       cursor: pointer;
       transition: background 0.2s, transform 0.1s;
       margin-top: 4px;
-      letter-spacing: 0.3px;
     }
     .btn-update:hover {
       background: #1d4ed8;
@@ -102,7 +96,7 @@
     .btn-update:active {
       transform: scale(0.97);
     }
-    /* Adaptación para móviles */
+    /* Responsive para móviles */
     @media (max-width: 600px) {
       .control-panel {
         top: 12px;
@@ -114,30 +108,52 @@
         width: 50px;
       }
     }
+
+    /* Contenedor del widget */
+    .tradingview-widget-container {
+      width: 100%;
+      height: 100%;
+    }
+    .tradingview-widget-container__widget {
+      width: 100%;
+      height: calc(100% - 32px);
+    }
+    .tradingview-widget-copyright {
+      text-align: center;
+      padding: 4px 0;
+    }
+    .tradingview-widget-copyright a {
+      color: #94a3b8;
+      font-size: 12px;
+      text-decoration: none;
+    }
+    .tradingview-widget-copyright a:hover {
+      color: #cbd5e1;
+    }
   </style>
 </head>
 <body>
-  <div id="widget-container">
+  <div id="app">
     <!-- Panel de control -->
     <div class="control-panel">
       <div class="title">⚙️ EMAs</div>
       <div class="control-row">
         <label>EMA 1</label>
-        <input type="number" id="ema1-period" value="50" min="1" max="500" step="1">
+        <input type="number" id="ema1-input" min="1" max="500" step="1" />
       </div>
       <div class="control-row">
         <label>EMA 2</label>
-        <input type="number" id="ema2-period" value="200" min="1" max="500" step="1">
+        <input type="number" id="ema2-input" min="1" max="500" step="1" />
       </div>
       <button class="btn-update" id="update-btn">Actualizar gráfico</button>
     </div>
 
-    <!-- Contenedor del widget -->
-    <div class="tradingview-widget-container" style="height:100%;width:100%">
-      <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
+    <!-- Widget de TradingView -->
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
       <div class="tradingview-widget-copyright">
-        <a href="https://es.tradingview.com/symbols/GBPUSD/?exchange=VANTAGE" rel="noopener nofollow" target="_blank">
-          <span class="blue-text">Track all markets on TradingView</span>
+        <a href="https://es.tradingview.com/symbols/GBPUSD/?exchange=VANTAGE" target="_blank" rel="noopener">
+          Track all markets on TradingView
         </a>
       </div>
     </div>
@@ -145,8 +161,26 @@
 
   <script>
     (function() {
-      // Configuración base del widget (se mantienen todos los parámetros)
-      function buildWidgetConfig(ema1Length, ema2Length) {
+      // ---------- Leer parámetros de la URL ----------
+      function getParam(name, def) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const val = urlParams.get(name);
+        if (val === null) return def;
+        const num = parseInt(val, 10);
+        return (isNaN(num) || num < 1) ? def : num;
+      }
+
+      let ema1 = getParam('ema1', 50);
+      let ema2 = getParam('ema2', 200);
+
+      // ---------- Rellenar los inputs con los valores actuales ----------
+      const ema1Input = document.getElementById('ema1-input');
+      const ema2Input = document.getElementById('ema2-input');
+      ema1Input.value = ema1;
+      ema2Input.value = ema2;
+
+      // ---------- Configuración del widget ----------
+      function getWidgetConfig(ema1Length, ema2Length) {
         return {
           "allow_symbol_change": true,
           "calendar": false,
@@ -187,51 +221,48 @@
         };
       }
 
-      // Referencias
-      const container = document.querySelector('.tradingview-widget-container');
-      const widgetDiv = container.querySelector('.tradingview-widget-container__widget');
-      const ema1Input = document.getElementById('ema1-period');
-      const ema2Input = document.getElementById('ema2-period');
-      const updateBtn = document.getElementById('update-btn');
-
-      // Función para cargar el widget con la configuración actual
-      function loadWidget(ema1, ema2) {
-        // Eliminar el script anterior si existe
+      // ---------- Cargar el widget ----------
+      function loadWidget(ema1Val, ema2Val) {
+        const container = document.querySelector('.tradingview-widget-container');
+        // Eliminar script anterior si existe (por si se recarga sin recargar la página)
         const oldScript = container.querySelector('script[src*="embed-widget-advanced-chart.js"]');
         if (oldScript) {
           oldScript.remove();
         }
 
-        // Crear nuevo script
         const script = document.createElement('script');
         script.type = 'text/javascript';
         script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
         script.async = true;
-        // Los parámetros se pasan como texto JSON en el contenido del script (no como atributo)
-        script.textContent = JSON.stringify(buildWidgetConfig(ema1, ema2));
+        script.textContent = JSON.stringify(getWidgetConfig(ema1Val, ema2Val));
         container.appendChild(script);
       }
 
-      // Carga inicial con valores por defecto (50 y 200)
-      loadWidget(50, 200);
+      // Carga inicial
+      loadWidget(ema1, ema2);
 
-      // Evento del botón actualizar
-      updateBtn.addEventListener('click', function() {
-        let ema1 = parseInt(ema1Input.value, 10);
-        let ema2 = parseInt(ema2Input.value, 10);
-        // Validación básica
-        if (isNaN(ema1) || ema1 < 1) ema1 = 50;
-        if (isNaN(ema2) || ema2 < 1) ema2 = 200;
-        ema1Input.value = ema1;
-        ema2Input.value = ema2;
-        loadWidget(ema1, ema2);
+      // ---------- Manejar la actualización (recarga la página con nuevos parámetros) ----------
+      document.getElementById('update-btn').addEventListener('click', function() {
+        let newEma1 = parseInt(ema1Input.value, 10);
+        let newEma2 = parseInt(ema2Input.value, 10);
+        if (isNaN(newEma1) || newEma1 < 1) newEma1 = 50;
+        if (isNaN(newEma2) || newEma2 < 1) newEma2 = 200;
+        // Actualizar los inputs con valores validados
+        ema1Input.value = newEma1;
+        ema2Input.value = newEma2;
+
+        // Construir nueva URL con los parámetros
+        const url = new URL(window.location.href);
+        url.searchParams.set('ema1', newEma1);
+        url.searchParams.set('ema2', newEma2);
+        window.location.href = url.href;  // Recarga la página
       });
 
       // Permitir actualizar con Enter en los inputs
       [ema1Input, ema2Input].forEach(input => {
         input.addEventListener('keydown', function(e) {
           if (e.key === 'Enter') {
-            updateBtn.click();
+            document.getElementById('update-btn').click();
           }
         });
       });
